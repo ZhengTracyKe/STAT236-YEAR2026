@@ -37,7 +37,7 @@ Keep each HTML file together with its supporting folders. Some projects also use
 
 ## Connect this folder to GitHub
 
-1. Sign in at [GitHub](https://github.com/new) and create an empty repository named `STAT236-projects`. Choose **Public** if you want to use GitHub Pages with GitHub Free. Leave the options to add a README, `.gitignore`, and license unchecked; this folder already has its own README and `.gitignore`.
+1. Sign in at [GitHub](https://github.com/new) and create an empty repository named `STAT236-YEAR2026`. Choose **Public** if you want to use GitHub Pages with GitHub Free. Leave the options to add a README, `.gitignore`, and license unchecked; this folder already has its own README and `.gitignore`.
 2. Open Terminal and run:
 
    ```sh
@@ -57,7 +57,7 @@ Keep each HTML file together with its supporting folders. Some projects also use
 3. Connect to the collection repository, then run:
 
    ```sh
-   git remote add origin https://github.com/kiwy23/STAT236-projects.git
+   git remote add origin https://github.com/ZhengTracyKe/STAT236-YEAR2026.git
    git push -u origin main
    ```
 
@@ -68,7 +68,7 @@ Keep each HTML file together with its supporting folders. Some projects also use
 1. Open your repository on GitHub and select **Settings → Pages**.
 2. Under **Build and deployment**, choose **Deploy from a branch**.
 3. Select **main** and **/ (root)**, then click **Save**.
-4. Once deployment finishes, use **Visit site** on the Pages settings screen. For a repository named `STAT236-projects`, the address is normally `https://kiwy23.github.io/STAT236-projects/`.
+4. Once deployment finishes, use **Visit site** on the Pages settings screen. For a repository named `STAT236-YEAR2026`, the address is normally `https://ZhengTracyKe.github.io/STAT236-YEAR2026/`.
 
 GitHub Pages supports this root `README.md` as the site's entry page. Its relative project links will point to the HTML files on the same site. Allow up to 10 minutes for publication.
 
