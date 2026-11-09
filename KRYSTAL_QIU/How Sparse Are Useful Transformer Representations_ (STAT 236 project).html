@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<!-- saved from url=(0033)https://leocwq.github.io/STAT236/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Sparse Are Useful Transformer Representations? (STAT 236 project)</title>
+<meta name="description" content="Random vs. data-driven dimension selection for sentiment classification with frozen BERT embeddings. STAT 236 course project, Harvard University, Fall 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./How Sparse Are Useful Transformer Representations_ (STAT 236 project)_files/css2" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FCFCFB;
+    --panel: #F3F4F1;
+    --ink: #1C2128;
+    --ink-2: #4B5563;
+    --ink-3: #8A94A3;
+    --rule: #DEE1DC;
+    --random: #2F6FD6;
+    --l1: #D9562B;
+    --pca: #1F9A6D;
+    --maxw: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 17px;
+    line-height: 1.62;
+    font-feature-settings: "tnum" 1;
+  }
+  a { color: inherit; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; text-decoration-color: var(--ink-3); }
+  a:hover { text-decoration-color: var(--ink); }
+  :focus-visible { outline: 3px solid var(--random); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: var(--maxw); margin-left: auto; margin-right: auto; padding-left: 28px; padding-right: 28px; }
+  p { margin: 0 0 1em; max-width: 68ch; }
+  h1, h2, h3 { margin: 0; letter-spacing: -0.015em; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.88em; background: #fff; border: 1px solid var(--rule); padding: 1px 6px; border-radius: 5px; }
+
+  /* top bar */
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 20px; padding-bottom: 20px; font-size: 0.95rem; color: var(--ink-2); }
+  .top nav { display: flex; gap: 20px; }
+
+  /* hero */
+  .hero { padding-top: 40px; padding-bottom: 56px; }
+  .hero h1 { font-size: clamp(2.2rem, 5vw, 3.8rem); line-height: 1.06; font-weight: 800; max-width: 17ch; }
+  .hero .subtitle { font-size: clamp(1.15rem, 2.1vw, 1.45rem); font-weight: 500; color: var(--ink-2); margin-top: 16px; max-width: 40ch; line-height: 1.35; }
+  .hero .authors { margin-top: 26px; font-weight: 600; }
+  .hero .affil { color: var(--ink-2); margin-top: 2px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .btn { display: inline-block; padding: 12px 20px; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: 0.98rem; border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .btn:hover { opacity: 0.86; }
+  .question { margin-top: 48px; font-size: 1.22rem; line-height: 1.55; max-width: 60ch; }
+  .setup { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 36px; }
+  .setup div { border-top: 2px solid var(--ink); padding-top: 14px; font-size: 0.98rem; color: var(--ink-2); }
+  .setup strong { display: block; color: var(--ink); font-size: 1.02rem; margin-bottom: 4px; }
+
+  /* body layout with contents rail */
+  .layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; border-top: 1px solid var(--rule); }
+  .toc { position: sticky; top: 0; align-self: start; padding-top: 64px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { display: flex; gap: 10px; padding: 6px 10px; border-radius: 8px; text-decoration: none; color: var(--ink-2); font-weight: 600; font-size: 0.95rem; }
+  .toc a span { color: var(--ink-3); min-width: 1ch; }
+  .toc a:hover { background: var(--panel); color: var(--ink); }
+  .toc a.on { background: var(--panel); color: var(--ink); }
+  .toc a.on span { color: var(--ink); }
+  main { min-width: 0; max-width: 800px; }
+
+  section.s { padding-top: 64px; padding-bottom: 24px; }
+  section.s + section.s { border-top: 1px solid var(--rule); }
+  h2 { font-size: 2rem; font-weight: 800; line-height: 1.15; margin-bottom: 8px; display: flex; gap: 14px; align-items: baseline; }
+  h2 .n { color: var(--ink-3); font-weight: 600; }
+  h3 { font-size: 1.25rem; font-weight: 700; line-height: 1.25; margin-top: 40px; margin-bottom: 12px; }
+  .sub { margin-top: 20px; }
+
+  /* related work */
+  .refs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; margin-bottom: 20px; }
+  .paper { background: var(--panel); border-radius: 14px; padding: 18px 20px; }
+  .paper .cite { font-weight: 700; margin-bottom: 2px; }
+  .paper .ptitle { color: var(--ink-2); font-size: 0.95rem; margin-bottom: 10px; }
+  .paper p { font-size: 0.97rem; margin: 0; }
+  .paper .use { margin-top: 10px; font-size: 0.95rem; font-weight: 600; }
+
+  ol.rq { margin: 8px 0 18px; padding-left: 1.4em; }
+  ol.rq li { margin-bottom: 10px; max-width: 64ch; padding-left: 4px; }
+  .note { font-size: 0.96rem; color: var(--ink-2); }
+
+  /* pipeline */
+  .pipeline { list-style: none; margin: 20px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; counter-reset: step; }
+  .pipeline li { position: relative; padding: 14px 14px 14px 0; font-size: 0.93rem; line-height: 1.4; border-top: 3px solid var(--ink); counter-increment: step; }
+  .pipeline li::before { content: counter(step); display: block; font-weight: 800; font-size: 0.9rem; color: var(--ink-3); margin-bottom: 4px; }
+  .pipeline li b { display: block; font-size: 0.98rem; }
+  .pipeline li.reduce { border-top-color: transparent; background: linear-gradient(to right, var(--random) 0 33.3%, var(--l1) 33.3% 66.6%, var(--pca) 66.6% 100%) top / 100% 3px no-repeat; }
+
+  /* stars */
+  .stars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 18px 0 8px; max-width: 620px; }
+  .star { border-radius: 12px; padding: 12px 8px; text-align: center; border: 1.5px solid var(--rule); background: #fff; }
+  .star .g { font-size: 1.05rem; letter-spacing: 1px; color: #C9921B; }
+  .star .lab { font-size: 0.88rem; font-weight: 700; margin-top: 4px; }
+  .star.neg { background: var(--panel); }
+  .star.pos { background: var(--panel); }
+  .star.exc { opacity: 0.55; border-style: dashed; }
+  .star.exc .lab { font-weight: 600; color: var(--ink-2); }
+
+  /* tables */
+  .tablewrap { overflow-x: auto; margin: 18px 0 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 9px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-weight: 700; color: var(--ink-2); border-bottom: 2px solid var(--ink); }
+  td.best { font-weight: 800; }
+  .tcap { color: var(--ink-2); font-size: 0.9rem; margin-top: 0; }
+  .tablewrap { margin-bottom: 10px; }
+
+  /* formula */
+  .formula { display: flex; align-items: center; gap: 10px; justify-content: center; margin: 18px 0 20px; font-family: "Times New Roman", Georgia, serif; font-size: 1.35rem; font-style: italic; }
+  .frac { display: inline-flex; flex-direction: column; align-items: center; }
+  .frac span:first-child { border-bottom: 1.5px solid var(--ink); padding: 0 6px 3px; }
+  .frac span:last-child { padding: 3px 6px 0; }
+  .formula .up { font-style: normal; }
+  sub, sup { font-size: 0.68em; }
+
+  /* method cards */
+  .methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 16px; }
+  .m { border-top: 4px solid; padding-top: 14px; }
+  .m h4 { margin: 0 0 6px; font-size: 1.05rem; }
+  .m p { font-size: 0.95rem; margin-bottom: 0.6em; }
+  .m.random { border-color: var(--random); } .m.l1 { border-color: var(--l1); } .m.pca { border-color: var(--pca); }
+
+  /* figures and charts */
+  figure { margin: 22px 0 8px; }
+  figure img { width: 100%; height: auto; display: block; border: 1px solid var(--rule); border-radius: 10px; background: #fff; }
+  figcaption { font-size: 0.93rem; color: var(--ink-2); margin-top: 10px; max-width: 72ch; }
+  figcaption b { color: var(--ink); }
+  .twofig { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.93rem; color: var(--ink-2); margin-bottom: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { display: inline-block; width: 22px; height: 3px; border-radius: 2px; }
+  .legend i.dash { height: 0; border-top: 2px dashed var(--ink); background: none; }
+  .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+  .chartwrap { position: relative; }
+  .chartwrap svg { width: 100%; height: auto; display: block; font-family: inherit; }
+  .tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; font-size: 0.86rem; box-shadow: 0 6px 20px rgba(28,33,40,0.08); min-width: 190px; display: none; z-index: 2; }
+  .tip b { display: block; margin-bottom: 4px; }
+  .tip div { display: flex; justify-content: space-between; gap: 14px; white-space: nowrap; }
+  .tip i { font-style: normal; display: inline-flex; align-items: center; gap: 6px; }
+  .tip i::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+
+  ul.points { padding-left: 1.2em; margin: 6px 0 16px; }
+  ul.points li { margin-bottom: 10px; max-width: 66ch; }
+
+  .conclusion { font-size: 1.15rem; line-height: 1.6; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+  .steps div { background: var(--panel); border-radius: 14px; padding: 16px 18px; font-size: 0.95rem; }
+
+  ol.biblio { padding-left: 1.6em; margin: 10px 0 0; font-size: 0.95rem; }
+  ol.biblio li { margin-bottom: 10px; max-width: 72ch; color: var(--ink-2); }
+  ol.biblio li b { color: var(--ink); font-weight: 600; }
+
+  footer { margin-top: 56px; padding-top: 28px; padding-bottom: 44px; border-top: 1px solid var(--rule); font-size: 0.93rem; color: var(--ink-2); }
+
+  @media (max-width: 980px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .toc { display: none; }
+    main { max-width: none; }
+  }
+  @media (max-width: 760px) {
+    .top nav { display: none; }
+    .setup, .refs-grid, .methods, .twofig, .steps { grid-template-columns: 1fr; }
+    .pipeline { grid-template-columns: 1fr; }
+    .pipeline li { padding: 10px 0 10px 0; }
+    .stars { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .star { padding: 10px 2px; }
+    .star .g { font-size: 0.78rem; letter-spacing: 0; }
+    .star .lab { font-size: 0.78rem; }
+    h2 { font-size: 1.7rem; }
+    section.s { padding-top: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="wrap top">
+  <div>STAT 236 course project, Harvard University, Fall 2026</div>
+  <nav>
+    <a href="https://leocwq.github.io/STAT236/Stats236_Final_Report.pdf">Report (PDF)</a>
+    <a href="https://github.com/leocwq/STAT236">GitHub</a>
+  </nav>
+</header>
+
+<div class="wrap hero">
+  <h1>How sparse are useful transformer representations?</h1>
+  <p class="subtitle">Random vs. data-driven dimension selection for text classification</p>
+  <p class="authors">Leo Cheng, Chufei Peng, Krystal Qiu, Jiangqi Wu</p>
+  <div class="buttons">
+    <a class="btn" href="https://leocwq.github.io/STAT236/Stats236_Final_Report.pdf">Read the report (PDF)</a>
+    <a class="btn ghost" href="https://github.com/leocwq/STAT236">Code on GitHub</a>
+    <a class="btn ghost" href="https://colab.research.google.com/github/leocwq/STAT236/blob/main/stat236_embedding.ipynb">Open notebook in Colab</a>
+  </div>
+
+  <p class="question">BERT turns every piece of text into 768 numbers. For a single task like telling positive product reviews from negative ones, does a classifier need all 768? And if it only needs some, does it matter which ones we keep?</p>
+
+  <div class="setup">
+    <div><strong>Data</strong>Amazon Review Polarity: 20,000 training and 10,000 test reviews, half positive and half negative.</div>
+    <div><strong>Representation</strong>Frozen <code>bert-base-uncased</code>, one 768-dimensional embedding per review. The encoder is never fine-tuned.</div>
+    <div><strong>Comparison</strong>Shrink each embedding to k = 1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300 or 400 dimensions three different ways, then classify with the same logistic regression.</div>
+  </div>
+</div>
+
+<div class="wrap layout">
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      <li><a href="https://leocwq.github.io/STAT236/#introduction" class="on"><span>1</span>Introduction</a></li>
+      <li><a href="https://leocwq.github.io/STAT236/#data-methodology"><span>2</span>Data and methodology</a></li>
+      <li><a href="https://leocwq.github.io/STAT236/#results"><span>3</span>Results</a></li>
+      <li><a href="https://leocwq.github.io/STAT236/#discussion"><span>4</span>Discussion</a></li>
+      <li><a href="https://leocwq.github.io/STAT236/#conclusion"><span>5</span>Conclusion</a></li>
+      <li><a href="https://leocwq.github.io/STAT236/#reproduce"><span></span>Reproduce</a></li>
+      <li><a href="https://leocwq.github.io/STAT236/#references"><span></span>References</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <!-- 1 INTRODUCTION -->
+  <section class="s" id="introduction">
+    <h2><span class="n">1</span>Introduction</h2>
+
+    <h3 class="sub">Background and motivation</h3>
+    <p>Pretrained language models such as BERT produce dense, high-dimensional representations that work for many downstream tasks. BERT-base gives every input a 768-dimensional embedding, but that size is fixed by the architecture, not by what a particular prediction problem needs.</p>
+    <p>The embeddings are dense, yet the relationship between an embedding and a specific label may be sparse. If a small subset of coordinates keeps most of the predictive performance, that reveals task-specific redundancy and shrinks downstream storage and classifier size. We test this with three reduction strategies, each probing a different idea:</p>
+    <ul class="points">
+      <li><b>Random coordinate selection</b> checks whether predictive information is spread broadly enough that any subset works.</li>
+      <li><b>Supervised (L1) selection</b> checks whether finding task-relevant coordinates gives an advantage.</li>
+      <li><b>PCA</b> combines information across all dimensions instead of picking individual ones.</li>
+    </ul>
+
+    <h3>Related work</h3>
+    <p>Two lines of earlier work motivate the project: neuron-level studies of what pretrained models encode, and classical statistical tools for selection and reduction.</p>
+    <div class="refs-grid">
+      <div class="paper">
+        <div class="cite">Durrani et al. (2020)</div>
+        <div class="ptitle">Analyzing individual neurons in pre-trained language models</div>
+        <p>Small subsets of neurons can predict morphology, syntax and semantics. Morphology is more localized than syntax, and information in BERT is more distributed than in XLNet.</p>
+        <p class="use">Takeaway: how sparse the useful information is depends on the property and the model.</p>
+      </div>
+      <div class="paper">
+        <div class="cite">Dalvi et al. (2020)</div>
+        <div class="ptitle">Analyzing redundancy in pretrained transformer models</div>
+        <p>Separates general redundancy from task-specific redundancy. Layer and neuron level analyses show selected subsets can keep much of downstream performance.</p>
+        <p class="use">Takeaway: high-dimensional representations can be highly redundant for a given task.</p>
+      </div>
+      <div class="paper">
+        <div class="cite">Tibshirani (1996)</div>
+        <div class="ptitle">Regression shrinkage and selection via the lasso</div>
+        <p>An L1 penalty drives many coefficients exactly to zero, so fitting the model also selects variables.</p>
+        <p class="use">Our use: L1-regularized logistic regression picks which coordinates to keep.</p>
+      </div>
+      <div class="paper">
+        <div class="cite">Jolliffe and Cadima (2016)</div>
+        <div class="ptitle">Principal component analysis: a review and recent developments</div>
+        <p>PCA projects data onto the directions of maximum variance, without using any labels.</p>
+        <p class="use">Our use: an unsupervised projection baseline that builds new components instead of keeping coordinates.</p>
+      </div>
+    </div>
+    <p>Where we fit: rather than studying linguistic properties across many layers, we ask a narrower question about pooled BERT embeddings and one sentiment task. At a fixed representation size, how much does the reduction strategy matter?</p>
+
+    <h3>Research questions and scope</h3>
+    <ol class="rq">
+      <li>How far can frozen BERT embeddings be reduced while staying close to the full 768-dimensional baseline?</li>
+      <li>At matched sizes, how do supervised L1 selection, random selection and PCA compare?</li>
+      <li>Under random selection, how sensitive is performance to which particular coordinates are kept?</li>
+    </ol>
+    <p class="note">Scope: this is an empirical comparison of established methods on one dataset and one embedding basis. It does not claim that transformer representations are sparse in general, and it does not make BERT inference itself any cheaper.</p>
+  </section>
+
+  <!-- 2 DATA AND METHODOLOGY -->
+  <section class="s" id="data-methodology">
+    <h2><span class="n">2</span>Data and methodology</h2>
+    <p>Every method shares the same pipeline. Only step 4 changes between methods, so differences in accuracy come from the representation, not the classifier.</p>
+    <ol class="pipeline" aria-label="Pipeline">
+      <li><b>Sample reviews</b>Balanced train and test sets</li>
+      <li><b>Frozen BERT</b>Mean-pooled 768-d embedding</li>
+      <li><b>Standardize</b>Using training mean and sd</li>
+      <li class="reduce"><b>Reduce to k</b>Random, L1 or PCA</li>
+      <li><b>Classify</b>L2 logistic regression, C tuned by CV</li>
+      <li><b>Evaluate</b>Held-out test accuracy and macro-F1</li>
+    </ol>
+
+    <h3>Dataset and preprocessing</h3>
+    <p>We use <b>Amazon Review Polarity</b> (Zhang et al., 2015), a binary sentiment dataset of product reviews, loaded from <a href="https://huggingface.co/datasets/fancyzhx/amazon_polarity">fancyzhx/amazon_polarity</a> on Hugging Face. Labels come from the star rating:</p>
+    <div class="stars" role="img" aria-label="One and two star reviews are negative, three star reviews are excluded, four and five star reviews are positive">
+      <div class="star neg"><div class="g">★</div><div class="lab">Negative</div></div>
+      <div class="star neg"><div class="g">★★</div><div class="lab">Negative</div></div>
+      <div class="star exc"><div class="g">★★★</div><div class="lab">Excluded</div></div>
+      <div class="star pos"><div class="g">★★★★</div><div class="lab">Positive</div></div>
+      <div class="star pos"><div class="g">★★★★★</div><div class="lab">Positive</div></div>
+    </div>
+    <p class="note">One and two star reviews are labeled negative (y = 0), four and five star reviews positive (y = 1). Three star reviews are not part of the dataset.</p>
+    <p>We keep the original train and test splits and build smaller samples in four steps:</p>
+    <ol class="rq">
+      <li>Draw candidate pools of 60,000 training and 30,000 test reviews without replacement (NumPy seed 0).</li>
+      <li>Join each review's title and body into one text, adding a period after the title when needed, and normalize whitespace.</li>
+      <li>Remove empty texts and exact duplicates, and drop any test review whose text also appears in the training pool.</li>
+      <li>Draw balanced samples of 20,000 training and 10,000 test reviews (seed 0).</li>
+    </ol>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Split</th><th>Reviews</th><th>Negative</th><th>Positive</th><th>Median words</th><th>95th pct. words</th></tr></thead>
+        <tbody>
+          <tr><td>Train</td><td>20,000</td><td>10,000</td><td>10,000</td><td>70</td><td>161</td></tr>
+          <tr><td>Test</td><td>10,000</td><td>5,000</td><td>5,000</td><td>69</td><td>160</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tcap">Table 1. The preprocessed samples. Word counts split on whitespace.</p>
+
+    <h3>Frozen BERT representation</h3>
+    <p>We encode reviews with <code>bert-base-uncased</code>, with every parameter frozen (evaluation mode, no gradients). Reviews are tokenized in batches of 64 and truncated at 256 tokens. The median review is about 90 tokens, and only 0.17% of training and 0.18% of test reviews are cut off. Each review's embedding is the average of its final-layer token vectors, skipping padding:</p>
+    <div class="formula" aria-label="x sub i equals the sum over t of a sub i t times h sub i t, divided by the sum over t of a sub i t, in R to the 768">
+      <span>x<sub>i</sub> =</span>
+      <span class="frac"><span>Σ<sub>t</sub> a<sub>it</sub> h<sub>it</sub></span><span>Σ<sub>t</sub> a<sub>it</sub></span></span>
+      <span class="up">∈ ℝ<sup>768</sup></span>
+    </div>
+    <p>Here h<sub>it</sub> is the vector for token t and a<sub>it</sub> is 1 for real tokens and 0 for padding. This gives a 20,000 × 768 training matrix and a 10,000 × 768 test matrix, computed once and reused by every experiment.</p>
+
+    <h3>Representation reduction</h3>
+    <p>Each coordinate is first standardized with its training mean and standard deviation, and the same transform is applied to the test set. We then compare reduced sizes k = 1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300 and 400 against the full 768-dimensional baseline.</p>
+    <div class="methods">
+      <div class="m random">
+        <h4>Random coordinates</h4>
+        <p>Pick k of the 768 coordinates uniformly at random, without replacement.</p>
+        <p>Repeated 20 times per k (seed 42), with a separate classifier for each subset. This is the uninformed reference.</p>
+      </div>
+      <div class="m l1">
+        <h4>L1-selected coordinates</h4>
+        <p>Fit L1-regularized logistic regression on the training set along a path of 33 penalty values.</p>
+        <p>For each k, take the strongest penalty that leaves at least k nonzero coefficients and keep the k with the largest absolute weights.</p>
+      </div>
+      <div class="m pca">
+        <h4>PCA components</h4>
+        <p>Fit PCA on the standardized training embeddings (400 components) and use the first k component scores.</p>
+        <p>Each component mixes all 768 coordinates, so equal k means equal input size, not equal use of the original coordinates.</p>
+      </div>
+    </div>
+
+    <h3>Classifier and tuning</h3>
+    <p>Every representation goes through the same classifier: a <code>StandardScaler</code> followed by L2-regularized logistic regression. Its inverse penalty C is chosen from 11 log-spaced values between 10<sup>−4</sup> and 10 by five-fold stratified cross-validation (seed 42), then the model is refit on the full training set and scored once on the held-out test set.</p>
+    <p class="note">Coordinate selection and PCA are fitted before cross-validation, not inside each fold, so cross-validation scores may be optimistic. The test set is never used for fitting or tuning.</p>
+
+    <h3>Metrics</h3>
+    <p>We report test accuracy and macro-F1 (the average of the F1 scores for the two classes). Loss relative to the full representation is <i>M</i><sub>full</sub> − <i>M</i><sub>method</sub>(k), in percentage points, so larger means worse. For random selection we report the mean and sample standard deviation across the 20 subsets. That spread reflects which coordinates were drawn on fixed data, not uncertainty over new data samples.</p>
+  </section>
+
+  <!-- 3 RESULTS -->
+  <section class="s" id="results">
+    <h2><span class="n">3</span>Results</h2>
+
+    <h3 class="sub">Exploratory data analysis</h3>
+    <p>Before the experiments we looked at the reviews and at the embeddings themselves.</p>
+    <figure>
+      <img src="./How Sparse Are Useful Transformer Representations_ (STAT 236 project)_files/fig1_token_lengths.png" alt="Histogram of training review lengths in BERT tokens for positive and negative reviews, with a dashed line at the 256 token limit.">
+      <figcaption><b>Figure 1.</b> Negative reviews tend to be longer than positive ones (median 98 vs. 84 tokens). Only 0.17% of training reviews pass the 256-token limit, so truncation barely touches the data.</figcaption>
+    </figure>
+    <figure>
+      <img src="./How Sparse Are Useful Transformer Representations_ (STAT 236 project)_files/fig2_embedding_stats.png" alt="Three panels: sorted standard deviations of the 768 coordinates, a histogram of absolute pairwise correlations between coordinates, and sorted absolute correlations of each coordinate with the sentiment label.">
+      <figcaption><b>Figure 2.</b> Coordinates differ in scale, which is why we standardize first. Most pairs are only weakly correlated (median |r| = 0.084). Sentiment signal is spread out but uneven: 362 coordinates have |r| above 0.1 with the label, and 111 above 0.2.</figcaption>
+    </figure>
+    <figure>
+      <img src="./How Sparse Are Useful Transformer Representations_ (STAT 236 project)_files/fig3_pca.png" alt="Left: cumulative explained variance of PCA components on a log scale, reaching 52, 66, 79, 90 and 97 percent at 25, 50, 100, 200 and 400 components. Right: absolute label correlation of the first 50 principal components, highest for PC4.">
+      <figcaption><b>Figure 3.</b> About 100 components explain 79% of the variance and 200 explain 90%. But the component most tied to sentiment is PC4 (|r| ≈ 0.47), not PC1. High variance and usefulness for this task are not the same thing.</figcaption>
+    </figure>
+
+    <h3>Classification performance</h3>
+    <p>With all 768 dimensions the classifier reaches <b>90.80%</b> test accuracy (macro-F1 0.9080). Accuracy generally rises with k for every method. Both L1 selection and PCA beat the average random subset at every size, and the gap is largest when k is small: at k = 5, L1 reaches 77.34% against 61.77% for random selection, a 15.57 point advantage. L1 is ahead of PCA at k = 1 and 2, PCA is ahead from k = 5 through 75, and L1 is slightly ahead from k = 100 on.</p>
+    <figure>
+      <img src="./How Sparse Are Useful Transformer Representations_ (STAT 236 project)_files/fig4_accuracy_vs_k.png" alt="Test accuracy and macro-F1 against dimensions kept for random coordinate selection, L1 selection and PCA, at 12 sizes from k = 1 to 400 on a log scale. Random selection shows mean plus or minus one standard deviation across 20 draws; dashed lines mark the full 768-dimensional baseline.">
+      <figcaption><b>Figure 4.</b> Test accuracy (left) and macro-F1 (right) against dimensions kept (log scale). The shaded band shows ±1 sample standard deviation across 20 random draws. Macro-F1 follows the same overall pattern as accuracy.</figcaption>
+    </figure>
+    <div class="tablewrap">
+      <table id="tableAcc">
+        <thead><tr><th>Dimensions k</th><th>Random</th><th>L1 selection</th><th>PCA</th></tr></thead>
+        <tbody><tr><td>1</td><td>54.81 ± 3.77</td><td class="best">67.13</td><td class="">56.84</td></tr><tr><td>2</td><td>55.61 ± 4.24</td><td class="best">71.15</td><td class="">67.00</td></tr><tr><td>5</td><td>61.77 ± 3.57</td><td class="">77.34</td><td class="best">79.03</td></tr><tr><td>10</td><td>67.30 ± 3.51</td><td class="">80.83</td><td class="best">83.71</td></tr><tr><td>25</td><td>74.27 ± 2.57</td><td class="">85.72</td><td class="best">86.68</td></tr><tr><td>50</td><td>80.89 ± 1.60</td><td class="">87.97</td><td class="best">88.77</td></tr><tr><td>75</td><td>83.47 ± 1.28</td><td class="">89.08</td><td class="best">89.15</td></tr><tr><td>100</td><td>85.37 ± 0.61</td><td class="best">89.78</td><td class="">89.70</td></tr><tr><td>150</td><td>87.52 ± 0.60</td><td class="best">90.36</td><td class="">90.28</td></tr><tr><td>200</td><td>88.60 ± 0.44</td><td class="best">90.46</td><td class="">90.25</td></tr><tr><td>300</td><td>89.70 ± 0.20</td><td class="best">90.66</td><td class="">90.39</td></tr><tr><td>400</td><td>90.25 ± 0.19</td><td class="best">90.65</td><td class="">90.51</td></tr><tr><td>Full 768</td><td colspan="3" style="text-align:center">90.80</td></tr></tbody>
+      </table>
+    </div>
+    <p class="tcap">Table 3. Test accuracy (%). Random is mean ± sample sd across 20 subsets. Bold marks the best reduced method at each k.</p>
+
+    <h3>Performance loss relative to the full representation</h3>
+    <p>L1 selection keeps most of the baseline performance with far fewer coordinates. At k = 100 it keeps about 13% of the coordinates and loses 1.02 points. At k = 200 it keeps about 26% and is 0.34 points below the baseline. The gains then flatten: going from 100 to 200 coordinates adds 0.68 points, while going from 200 to 400 adds 0.19. The best tested L1 result is 90.66% at k = 300, 0.14 points below the baseline. PCA also closes in, reaching 90.51% with 400 components.</p>
+    <figure>
+      <div class="legend">
+        <span><i style="background:var(--random)"></i>Random (mean)</span>
+        <span><i style="background:var(--l1)"></i>L1-selected</span>
+        <span><i style="background:var(--pca)"></i>PCA</span>
+      </div>
+      <div class="chartwrap"><svg id="chartLoss" role="img" aria-label="Accuracy loss relative to the full representation, in percentage points on a log scale" viewBox="0 0 800 360"><line x1="58" x2="724" y1="281.9038670713618" y2="281.9038670713618" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="285.9038670713618" text-anchor="end" font-size="13" fill="#8A94A3">0.1</text><line x1="58" x2="724" y1="237.37254996419327" y2="237.37254996419327" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="241.37254996419327" text-anchor="end" font-size="13" fill="#8A94A3">0.3</text><line x1="58" x2="724" y1="188.57053373802842" y2="188.57053373802842" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="192.57053373802842" text-anchor="end" font-size="13" fill="#8A94A3">1</text><line x1="58" x2="724" y1="144.03921663085993" y2="144.03921663085993" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="148.03921663085993" text-anchor="end" font-size="13" fill="#8A94A3">3</text><line x1="58" x2="724" y1="95.23720040469507" y2="95.23720040469507" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="99.23720040469507" text-anchor="end" font-size="13" fill="#8A94A3">10</text><line x1="58" x2="724" y1="50.70588329752658" y2="50.70588329752658" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="54.70588329752658" text-anchor="end" font-size="13" fill="#8A94A3">30</text><line x1="58" x2="724" y1="30" y2="30" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="34" text-anchor="end" font-size="13" fill="#8A94A3">50</text><text x="58" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">1</text><text x="135.0489449821998" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">2</text><text x="236.9021100356004" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">5</text><text x="313.95105501780023" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">10</text><text x="415.8042200712008" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">25</text><text x="492.8531650534006" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">50</text><text x="569.9021100356005" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">100</text><text x="646.9510550178002" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">200</text><text x="724" y="336" text-anchor="middle" font-size="13" fill="#8A94A3">400</text><text x="391" y="356" text-anchor="middle" font-size="13" fill="#4B5563">dimensions kept, k (log scale)</text><text x="50" y="14" font-size="13" fill="#4B5563">points below full 768</text><polyline points="58,43.325768471229395 135.0489449821998,44.23691698414306 236.9021100356004,52.03954003605608 313.95105501780023,60.602475105180986 415.8042200712008,74.85648576443842 492.8531650534006,95.61184059940713 537.923908588115,107.82749610485646 569.9021100356005,119.97428935260017 614.9728535703148,140.3975999111014 646.9510550178002,156.56504814351365 692.0217985525146,184.8733780943344 724,212.43652197991156" fill="none" stroke="#2F6FD6" stroke-width="2.5" stroke-linejoin="round"></polyline><circle cx="58" cy="43.325768471229395" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="135.0489449821998" cy="44.23691698414306" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="236.9021100356004" cy="52.03954003605608" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="313.95105501780023" cy="60.602475105180986" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="415.8042200712008" cy="74.85648576443842" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="492.8531650534006" cy="95.61184059940713" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="537.923908588115" cy="107.82749610485646" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="569.9021100356005" cy="119.97428935260017" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="614.9728535703148" cy="140.3975999111014" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="646.9510550178002" cy="156.56504814351365" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="692.0217985525146" cy="184.8733780943344" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><circle cx="724" cy="212.43652197991156" r="5" fill="#2F6FD6" stroke="#fff" stroke-width="2"></circle><polyline points="58,60.31202966464737 135.0489449821998,67.8566952982935 236.9021100356004,83.19299481515233 313.95105501780023,95.35898562894056 415.8042200712008,122.68992059152923 492.8531650534006,146.40379975576133 537.923908588115,166.58787869332386 569.9021100356005,187.7678510402495 614.9728535703148,221.84828393265028 646.9510550178002,232.2991681474171 692.0217985525146,268.26525040805757 724,265.46868289283" fill="none" stroke="#D9562B" stroke-width="2.5" stroke-linejoin="round"></polyline><rect x="53.5" y="55.81202966464737" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="130.5489449821998" y="63.3566952982935" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="232.4021100356004" y="78.69299481515233" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="309.45105501780023" y="90.85898562894056" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="411.3042200712008" y="118.18992059152923" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="488.3531650534006" y="141.90379975576133" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="533.423908588115" y="162.08787869332386" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="565.4021100356005" y="183.2678510402495" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="610.4728535703148" y="217.34828393265028" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="642.4510550178002" y="227.7991681474171" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="687.5217985525146" y="263.76525040805757" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><rect x="719.5" y="260.96868289283" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polyline points="58,45.68021679131634 135.0489449821998,60.09001774608731 236.9021100356004,88.63139720597451 313.95105501780023,109.17688512094216 415.8042200712008,131.1801269082692 492.8531650534006,159.87090353279524 537.923908588115,168.27203227806368 569.9021100356005,184.70721645659404 614.9728535703148,215.07688833211398 646.9510550178002,212.80334938523188 692.0217985525146,224.71070711085318 724,238.74672060079232" fill="none" stroke="#1F9A6D" stroke-width="2.5" stroke-linejoin="round"></polyline><polygon points="58,39.68021679131634 63.5,49.68021679131634 52.5,49.68021679131634" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="135.0489449821998,54.09001774608731 140.5489449821998,64.09001774608731 129.5489449821998,64.09001774608731" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="236.9021100356004,82.63139720597451 242.4021100356004,92.63139720597451 231.4021100356004,92.63139720597451" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="313.95105501780023,103.17688512094216 319.45105501780023,113.17688512094216 308.45105501780023,113.17688512094216" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="415.8042200712008,125.18012690826919 421.3042200712008,135.1801269082692 410.3042200712008,135.1801269082692" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="492.8531650534006,153.87090353279524 498.3531650534006,163.87090353279524 487.3531650534006,163.87090353279524" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="537.923908588115,162.27203227806368 543.423908588115,172.27203227806368 532.423908588115,172.27203227806368" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="569.9021100356005,178.70721645659404 575.4021100356005,188.70721645659404 564.4021100356005,188.70721645659404" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="614.9728535703148,209.07688833211398 620.4728535703148,219.07688833211398 609.4728535703148,219.07688833211398" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="646.9510550178002,206.80334938523188 652.4510550178002,216.80334938523188 641.4510550178002,216.80334938523188" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="692.0217985525146,218.71070711085318 697.5217985525146,228.71070711085318 686.5217985525146,228.71070711085318" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><polygon points="724,232.74672060079232 729.5,242.74672060079232 718.5,242.74672060079232" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><text x="734" y="216.43652197991156" font-size="13" fill="#4B5563">Random</text><text x="734" y="242.74672060079232" font-size="13" fill="#4B5563">PCA</text><text x="734" y="269.46868289283" font-size="13" fill="#4B5563">L1</text><line x1="0" x2="0" y1="30" y2="310" stroke="#1C2128" stroke-width="1" stroke-dasharray="3 3" opacity="0"></line></svg><div class="tip"></div></div>
+      <figcaption><b>Figure 5.</b> Accuracy lost compared with all 768 dimensions, in percentage points. Both axes are on a log scale, so equal steps mean equal ratios. Lower is better.</figcaption>
+    </figure>
+
+    <h3>Variability across random subsets</h3>
+    <p>Random selection improves from 54.81% at k = 1 to 90.25% at k = 400. Its standard deviation is 3.77 points at k = 1, peaks at 4.24 points at k = 2, and then falls to 0.19 points at k = 400. Small random subsets are a gamble on which coordinates you happen to draw; large ones give consistent results that approach the baseline, though they stay below L1 and PCA on average.</p>
+    <figure>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--random)"></i>One random draw (20 per k)</span>
+        <span><i style="background:var(--ink)"></i>Mean of the 20 draws</span>
+        <span><i class="dot" style="background:var(--l1);border-radius:1px"></i>L1</span>
+        <span><i class="dot" style="background:var(--pca)"></i>PCA</span>
+      </div>
+      <div class="chartwrap"><svg id="chartRuns" role="img" aria-label="Test accuracy of each of the 20 random coordinate subsets at every k, with the L1 and PCA results for comparison" viewBox="0 0 800 420"><line x1="58" x2="724" y1="354.5454545454545" y2="354.5454545454545" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="358.5454545454545" text-anchor="end" font-size="13" fill="#8A94A3">50%</text><line x1="58" x2="724" y1="277.27272727272725" y2="277.27272727272725" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="281.27272727272725" text-anchor="end" font-size="13" fill="#8A94A3">60%</text><line x1="58" x2="724" y1="200.00000000000003" y2="200.00000000000003" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="204.00000000000003" text-anchor="end" font-size="13" fill="#8A94A3">70%</text><line x1="58" x2="724" y1="122.72727272727272" y2="122.72727272727272" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="126.72727272727272" text-anchor="end" font-size="13" fill="#8A94A3">80%</text><line x1="58" x2="724" y1="45.45454545454547" y2="45.45454545454547" stroke="#E7E9E4" stroke-width="1"></line><text x="50" y="49.45454545454547" text-anchor="end" font-size="13" fill="#8A94A3">90%</text><text x="85.75" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">1</text><text x="141.25" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">2</text><text x="196.75" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">5</text><text x="252.25" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">10</text><text x="307.75" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">25</text><text x="363.25" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">50</text><text x="418.75" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">75</text><text x="474.25" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">100</text><text x="529.75" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">150</text><text x="585.25" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">200</text><text x="640.75" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">300</text><text x="696.25" y="396" text-anchor="middle" font-size="13" fill="#8A94A3">400</text><text x="391" y="416" text-anchor="middle" font-size="13" fill="#4B5563">dimensions kept, k</text><line x1="58" x2="724" y1="39.27272727272728" y2="39.27272727272728" stroke="#1C2128" stroke-width="2" stroke-dasharray="6 5"></line><text x="64" y="31.27272727272728" font-size="13" fill="#1C2128" font-weight="600">Full 768 dimensions: 90.80%</text><circle cx="71.5975" cy="348.8272727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="75.76" cy="348.3636363636363" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="79.9225" cy="346.5863636363636" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="84.08500000000001" cy="344.3454545454546" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="88.2475" cy="337.23636363636365" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="71.5975" cy="332.1363636363636" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="75.76" cy="331.75" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="79.9225" cy="329.1227272727272" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="84.08500000000001" cy="326.65" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="88.2475" cy="326.41818181818184" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="71.5975" cy="322.6318181818182" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="75.76" cy="318.53636363636366" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="79.9225" cy="312.20000000000005" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="84.08500000000001" cy="311.1181818181818" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="88.2475" cy="304.3954545454546" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="71.5975" cy="303.6227272727273" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="75.76" cy="302.92727272727274" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="79.9225" cy="299.3727272727273" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="84.08500000000001" cy="279.28181818181815" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="88.2475" cy="222.1772727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="70.765" x2="89.9125" y1="317.385" y2="317.385" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="91.573" y="217.6772727272727" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="104.398,295.6909090909091 109.898,305.6909090909091 98.898,305.6909090909091" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="127.0975" cy="354.8545454545455" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="131.26" cy="347.6681818181818" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="135.4225" cy="344.19090909090914" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="139.585" cy="337.23636363636365" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="143.7475" cy="334.53181818181815" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="127.0975" cy="332.29090909090905" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="131.26" cy="331.9818181818182" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="135.4225" cy="330.05" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="139.585" cy="328.0409090909091" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="143.7475" cy="325.4909090909091" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="127.0975" cy="324.17727272727274" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="131.26" cy="320.3909090909091" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="135.4225" cy="305.16818181818184" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="139.585" cy="295.27727272727276" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="143.7475" cy="285.54090909090905" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="127.0975" cy="285.3863636363636" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="131.26" cy="276.6545454545454" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="135.4225" cy="268.0772727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="139.585" cy="262.6681818181818" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="143.7475" cy="234.38636363636365" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="126.265" x2="145.4125" y1="311.20318181818186" y2="311.20318181818186" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="147.073" y="186.61363636363635" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="159.898,217.18181818181816 165.398,227.18181818181816 154.398,227.18181818181816" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="182.5975" cy="309.7272727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="186.76" cy="304.24090909090904" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="190.9225" cy="299.5272727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="195.085" cy="296.5136363636364" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="199.2475" cy="287.3954545454546" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="182.5975" cy="281.59999999999997" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="186.76" cy="271.9409090909091" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="190.9225" cy="270.9363636363637" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="195.085" cy="266.6863636363636" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="199.2475" cy="264.4454545454545" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="182.5975" cy="259.80909090909086" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="186.76" cy="258.80454545454546" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="190.9225" cy="252.15909090909096" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="195.085" cy="251.69545454545457" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="199.2475" cy="249.99545454545455" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="182.5975" cy="247.9090909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="186.76" cy="242.34545454545454" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="190.9225" cy="220.63181818181818" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="195.085" cy="217.85000000000002" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="199.2475" cy="217.5409090909091" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="181.765" x2="200.9125" y1="263.5877272727274" y2="263.5877272727274" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="202.573" y="138.7818181818182" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="215.398,124.2227272727273 220.898,134.2227272727273 209.898,134.2227272727273" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="238.0975" cy="297.1318181818182" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="242.26" cy="259.5772727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="246.4225" cy="252.23636363636365" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="250.585" cy="244.04545454545453" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="254.7475" cy="237.3227272727273" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="238.0975" cy="234.07727272727269" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="242.26" cy="227.58636363636364" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="246.4225" cy="223.10454545454542" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="250.585" cy="220.16818181818178" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="254.7475" cy="219.24090909090907" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="238.0975" cy="210.43181818181822" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="242.26" cy="206.9545454545455" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="246.4225" cy="205.48636363636368" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="250.585" cy="203.24545454545458" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="254.7475" cy="199.7681818181818" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="238.0975" cy="198.99545454545452" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="242.26" cy="198.0681818181818" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="246.4225" cy="197.91363636363639" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="250.585" cy="194.66818181818186" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="254.7475" cy="187.40454545454543" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="237.265" x2="256.4125" y1="220.87136363636355" y2="220.87136363636355" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="258.073" y="111.81363636363638" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="270.898,88.05909090909097 276.398,98.05909090909097 265.398,98.05909090909097" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="293.5975" cy="196.75454545454542" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="297.76" cy="194.5136363636364" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="301.9225" cy="189.80000000000004" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="306.085" cy="189.25909090909093" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="310.2475" cy="189.18181818181822" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="293.5975" cy="185.70454545454544" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="297.76" cy="178.67272727272726" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="301.9225" cy="176.35454545454544" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="306.085" cy="168.78181818181824" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="310.2475" cy="164.37727272727275" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="293.5975" cy="164.3" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="297.76" cy="158.89090909090913" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="301.9225" cy="158.73636363636368" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="306.085" cy="158.50454545454545" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="310.2475" cy="157.8090909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="293.5975" cy="151.39545454545456" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="297.76" cy="146.29545454545456" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="301.9225" cy="146.06363636363636" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="306.085" cy="135.1681818181818" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="310.2475" cy="130.06818181818187" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="292.765" x2="311.9125" y1="167.03159090909074" y2="167.03159090909074" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="313.573" y="74.02727272727279" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="326.398,65.10909090909092 331.898,75.10909090909092 320.898,75.10909090909092" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="349.0975" cy="140.0363636363637" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="353.26" cy="134.93636363636364" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="357.4225" cy="128.36818181818188" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="361.585" cy="126.2045454545455" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="365.7475" cy="126.2045454545455" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="349.0975" cy="126.05000000000005" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="353.26" cy="122.95909090909096" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="357.4225" cy="116.23636363636365" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="361.585" cy="116.08181818181822" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="365.7475" cy="114.45909090909095" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="349.0975" cy="113.22272727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="353.26" cy="112.9136363636364" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="357.4225" cy="111.0590909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="361.585" cy="111.0590909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="365.7475" cy="110.2090909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="349.0975" cy="106.57727272727277" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="353.26" cy="105.10909090909095" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="357.4225" cy="104.95454545454551" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="361.585" cy="103.79545454545456" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="365.7475" cy="86.25454545454551" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="348.265" x2="367.4125" y1="115.8345454545455" y2="115.8345454545455" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="369.073" y="56.64090909090909" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="381.898,48.959090909090904 387.398,58.959090909090904 376.398,58.959090909090904" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="404.5975" cy="117.55000000000004" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="408.76" cy="110.2090909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="412.9225" cy="108.58636363636364" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="417.085" cy="105.72727272727278" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="421.2475" cy="103.71818181818183" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="404.5975" cy="101.09090909090914" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="408.76" cy="98.38636363636365" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="412.9225" cy="98.00000000000006" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="417.085" cy="96.37727272727278" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="421.2475" cy="95.44999999999999" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="404.5975" cy="94.6" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="408.76" cy="93.67272727272729" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="412.9225" cy="93.51818181818186" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="417.085" cy="92.12727272727274" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="421.2475" cy="89.11363636363636" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="404.5975" cy="88.8818181818182" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="408.76" cy="87.02727272727279" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="412.9225" cy="82.1590909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="417.085" cy="81.07727272727276" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="421.2475" cy="81.00000000000003" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="403.765" x2="422.9125" y1="95.91363636363639" y2="95.91363636363639" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="424.573" y="48.06363636363636" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="437.398,46.02272727272734 442.898,56.02272727272734 431.898,56.02272727272734" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="460.0975" cy="92.3590909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="464.26" cy="87.56818181818181" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="468.4225" cy="85.40454545454544" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="472.585" cy="85.09545454545457" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="476.7475" cy="84.55454545454545" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="460.0975" cy="83.39545454545458" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="464.26" cy="82.85454545454547" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="468.4225" cy="82.77727272727275" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="472.585" cy="82.54545454545459" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="476.7475" cy="82.00454545454546" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="460.0975" cy="81.38636363636363" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="464.26" cy="81.2318181818182" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="468.4225" cy="80.76818181818189" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="472.585" cy="78.52727272727279" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="476.7475" cy="77.52272727272725" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="460.0975" cy="77.13636363636368" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="464.26" cy="76.59545454545456" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="468.4225" cy="75.20454545454544" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="472.585" cy="74.04545454545458" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="476.7475" cy="73.96818181818186" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="459.265" x2="478.4125" y1="81.24727272727276" y2="81.24727272727276" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="480.073" y="42.65454545454545" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="492.898,41.77272727272728 498.398,51.77272727272728 487.398,51.77272727272728" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="515.5975" cy="75.59090909090912" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="519.76" cy="75.20454545454544" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="523.9225" cy="67.78636363636367" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="528.085" cy="66.93636363636368" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="532.2475" cy="66.85909090909095" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="515.5975" cy="66.16363636363641" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="519.76" cy="65.93181818181816" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="523.9225" cy="65.62272727272729" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="528.085" cy="64.69545454545458" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="532.2475" cy="64.46363636363643" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="515.5975" cy="64.07727272727274" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="519.76" cy="64.00000000000003" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="523.9225" cy="63.69090909090915" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="528.085" cy="62.84090909090916" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="532.2475" cy="61.60454545454549" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="515.5975" cy="60.44545454545454" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="519.76" cy="60.36818181818182" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="523.9225" cy="59.9045454545455" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="528.085" cy="59.51818181818182" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="532.2475" cy="56.96818181818185" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="514.765" x2="533.9125" y1="64.63363636363641" y2="64.63363636363641" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="535.573" y="38.17272727272733" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="548.398,37.29090909090908 553.898,47.29090909090908 542.898,47.29090909090908" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="571.0975" cy="63.536363636363625" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="575.26" cy="62.068181818181884" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="579.4225" cy="59.67272727272726" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="583.585" cy="58.82272727272727" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="587.7475" cy="58.43636363636367" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="571.0975" cy="57.509090909090965" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="575.26" cy="57.277272727272724" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="579.4225" cy="57.12272727272729" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="583.585" cy="57.04545454545456" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="587.7475" cy="56.96818181818185" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="571.0975" cy="56.50454545454545" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="575.26" cy="56.11818181818185" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="579.4225" cy="55.11363636363643" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="583.585" cy="55.0363636363637" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="587.7475" cy="54.65000000000003" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="571.0975" cy="53.6454545454546" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="575.26" cy="53.02727272727276" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="579.4225" cy="52.02272727272734" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="583.585" cy="50.86363636363638" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="587.7475" cy="50.40000000000006" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="570.265" x2="589.4125" y1="56.292045454545516" y2="56.292045454545516" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="591.073" y="37.40000000000006" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="603.898,37.52272727272732 609.398,47.52272727272732 598.398,47.52272727272732" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="626.5975" cy="51.48181818181821" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="630.76" cy="49.395454545454555" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="634.9225" cy="49.08636363636367" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="639.085" cy="48.77727272727272" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="643.2475" cy="48.7" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="626.5975" cy="48.622727272727275" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="630.76" cy="48.54545454545456" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="634.9225" cy="48.54545454545456" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="639.085" cy="48.313636363636405" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="643.2475" cy="48.15909090909096" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="626.5975" cy="47.92727272727272" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="630.76" cy="47.30909090909097" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="634.9225" cy="47.15454545454545" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="639.085" cy="47.000000000000014" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="643.2475" cy="46.92272727272729" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="626.5975" cy="46.61363636363642" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="630.76" cy="45.99545454545458" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="634.9225" cy="45.45454545454547" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="639.085" cy="45.45454545454547" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="643.2475" cy="45.300000000000026" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="625.765" x2="644.9125" y1="47.7379545454545" y2="47.7379545454545" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="646.573" y="35.854545454545516" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="659.398,36.44090909090909 664.898,46.44090909090909 653.898,46.44090909090909" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><circle cx="682.0975" cy="45.99545454545458" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="686.26" cy="45.76363636363643" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="690.4225" cy="44.913636363636435" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="694.585" cy="44.759090909090915" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="698.7475" cy="44.681818181818194" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="682.0975" cy="44.60454545454547" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="686.26" cy="44.45000000000004" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="690.4225" cy="44.37272727272732" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="694.585" cy="44.14090909090916" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="698.7475" cy="44.14090909090916" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="682.0975" cy="44.14090909090916" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="686.26" cy="43.13636363636365" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="690.4225" cy="42.82727272727277" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="694.585" cy="42.82727272727277" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="698.7475" cy="42.518181818181816" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="682.0975" cy="42.44090909090909" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="686.26" cy="41.82272727272734" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="690.4225" cy="41.745454545454535" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="694.585" cy="41.359090909090945" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><circle cx="698.7475" cy="40.58636363636367" r="4.5" fill="#2F6FD6" fill-opacity="0.6" stroke="#fff" stroke-width="1.2"></circle><line x1="681.265" x2="700.4125" y1="43.56136363636369" y2="43.56136363636369" stroke="#1C2128" stroke-width="2.5" stroke-linecap="round"></line><rect x="702.073" y="35.93181818181823" width="9" height="9" fill="#D9562B" stroke="#fff" stroke-width="2"></rect><polygon points="714.898,35.51363636363638 720.398,45.51363636363638 709.398,45.51363636363638" fill="#1F9A6D" stroke="#fff" stroke-width="2"></polygon><line x1="0" x2="0" y1="30" y2="370" stroke="#1C2128" stroke-width="1" stroke-dasharray="3 3" opacity="0"></line></svg><div class="tip"></div></div>
+      <figcaption><b>Figure 6.</b> Every one of the 20 random draws at each k. The spread generally narrows as k grows. At k = 1, the best random draw ties L1 and exceeds PCA. From k = 2 through 300, even the best draw is below both methods. At k = 400, the best draw reaches 90.63%, above PCA at 90.51% but just below L1 at 90.65%.</figcaption>
+    </figure>
+    <div class="tablewrap">
+      <table id="tableRange">
+        <thead><tr><th>k</th><th>Minimum</th><th>Maximum</th><th>Range</th></tr></thead>
+        <tbody><tr><td>1</td><td>50.74</td><td>67.13</td><td>16.39 pts</td></tr><tr><td>2</td><td>49.96</td><td>65.55</td><td>15.59 pts</td></tr><tr><td>5</td><td>55.80</td><td>67.73</td><td>11.93 pts</td></tr><tr><td>10</td><td>57.43</td><td>71.63</td><td>14.20 pts</td></tr><tr><td>25</td><td>70.42</td><td>79.05</td><td>8.63 pts</td></tr><tr><td>50</td><td>77.76</td><td>84.72</td><td>6.96 pts</td></tr><tr><td>75</td><td>80.67</td><td>85.40</td><td>4.73 pts</td></tr><tr><td>100</td><td>83.93</td><td>86.31</td><td>2.38 pts</td></tr><tr><td>150</td><td>86.10</td><td>88.51</td><td>2.41 pts</td></tr><tr><td>200</td><td>87.66</td><td>89.36</td><td>1.70 pts</td></tr><tr><td>300</td><td>89.22</td><td>90.02</td><td>0.80 pts</td></tr><tr><td>400</td><td>89.93</td><td>90.63</td><td>0.70 pts</td></tr></tbody>
+      </table>
+    </div>
+    <p class="tcap">Table 5. Lowest and highest test accuracy (%) among the 20 random subsets.</p>
+  </section>
+
+  <!-- 4 DISCUSSION -->
+  <section class="s" id="discussion">
+    <h2><span class="n">4</span>Discussion</h2>
+
+    <h3 class="sub">Interpretation of the findings</h3>
+    <ul class="points">
+      <li><b>A smaller representation can keep most of the performance, but the choice of coordinates matters.</b> L1 selection beats the average random subset at every size, most of all when k is small, so supervised selection does find coordinates that carry more useful information than an arbitrary subset.</li>
+      <li><b>Distributed signal and redundancy coexist.</b> Hundreds of coordinates are individually correlated with sentiment, yet 200 selected ones nearly match the full baseline. That does not make the embeddings sparse or the other coordinates useless; their information may overlap with what is kept. The selected coordinates also depend on the embedding basis, so they are not a universal set of sentiment features.</li>
+      <li><b>PCA is a competitive alternative.</b> It outperforms L1 from k = 5 through 75, while L1 leads at k = 1 and 2 and is slightly ahead from k = 100 onward. PCA keeps variance rather than optimizing for prediction, as Figure 3 shows with PC4 beating PC1. The preferred method depends on k; these results do not establish a general winner across tasks.</li>
+    </ul>
+
+    <h3>Limitations and future work</h3>
+    <ul class="points">
+      <li>One balanced sample, one frozen BERT model, mean pooling and a linear classifier. Results may differ for other tasks, models or pooling. Exact-text deduplication does not rule out near-duplicate reviews.</li>
+      <li>L1 selection and PCA are fitted on the whole training set before cross-validation, so validation scores may be optimistic. A cleaner version would refit standardization, selection and PCA inside each fold.</li>
+      <li>The random-subset spread measures sensitivity to coordinate choice on fixed data, not uncertainty over new samples, and L1 and PCA stability across samples is not assessed. Close scores such as 90.66% and 90.80% should not be read as statistically equivalent.</li>
+      <li>Reduction happens after BERT has already run. It shrinks stored features and the classifier, not transformer inference cost.</li>
+      <li>Next steps: fix the cross-validation procedure, repeat the analysis on new data samples, add more tasks, and compare test predictions pairwise to measure how uncertain the gaps are.</li>
+    </ul>
+  </section>
+
+  <!-- 5 CONCLUSION -->
+  <section class="s" id="conclusion">
+    <h2><span class="n">5</span>Conclusion</h2>
+    <p class="conclusion">Frozen BERT embeddings can be shrunk a lot for Amazon Polarity sentiment classification. L1 selection keeps 200 of 768 coordinates and reaches 90.46% accuracy, against 90.80% with all of them; its best tested result is 90.66% at k = 300. Both L1 selection and PCA beat average random selection at every size tested. L1 leads PCA at k = 1 and 2, PCA leads from k = 5 through 75, and L1 is slightly ahead from k = 100 onward. The results support task-specific predictive redundancy and show that informed reduction preserves performance better than removing coordinates at random. They do not establish universal sparsity or an optimal dimension for transformer representations.</p>
+  </section>
+
+  <!-- REPRODUCE -->
+  <section class="s" id="reproduce">
+    <h2>Reproduce it</h2>
+    <p>The whole pipeline is one notebook, <code>stat236_embedding.ipynb</code>, built for Google Colab with a T4 GPU. Each step caches its output, so re-runs skip what already exists. Software: Python with PyTorch, Transformers, Datasets, NumPy, pandas and scikit-learn 1.6.1.</p>
+    <div class="steps">
+      <div><b>Quick check</b><br>Keep <code>EMB_LIMIT = 200</code> and <code>QUICK = True</code> in Step 0, then Run all. Takes a few minutes.</div>
+      <div><b>Full run</b><br>Set <code>EMB_LIMIT = None</code> and <code>QUICK = False</code>. Takes 15 to 25 minutes. Sampling uses seed 0; random subsets, CV folds and PCA use seed 42.</div>
+      <div><b>Outputs</b><br>Per-run results go to <code>results/full/results_raw.csv</code> and the summary to <code>results/full/summary.csv</code>.</div>
+    </div>
+  </section>
+
+  <!-- REFERENCES -->
+  <section class="s" id="references">
+    <h2>References</h2>
+    <ol class="biblio">
+      <li><b>J. Devlin, M.-W. Chang, K. Lee, K. Toutanova.</b> BERT: Pre-training of deep bidirectional transformers for language understanding. NAACL-HLT, 2019. <a href="https://doi.org/10.18653/v1/N19-1423">doi:10.18653/v1/N19-1423</a></li>
+      <li><b>N. Durrani, H. Sajjad, F. Dalvi, Y. Belinkov.</b> Analyzing individual neurons in pre-trained language models. EMNLP, 2020. <a href="https://doi.org/10.18653/v1/2020.emnlp-main.395">doi:10.18653/v1/2020.emnlp-main.395</a></li>
+      <li><b>F. Dalvi, H. Sajjad, N. Durrani, Y. Belinkov.</b> Analyzing redundancy in pretrained transformer models. EMNLP, 2020. <a href="https://doi.org/10.18653/v1/2020.emnlp-main.398">doi:10.18653/v1/2020.emnlp-main.398</a></li>
+      <li><b>R. Tibshirani.</b> Regression shrinkage and selection via the lasso. Journal of the Royal Statistical Society: Series B, 58(1), pp. 267 to 288, 1996. <a href="https://doi.org/10.1111/j.2517-6161.1996.tb02080.x">doi:10.1111/j.2517-6161.1996.tb02080.x</a></li>
+      <li><b>I. T. Jolliffe, J. Cadima.</b> Principal component analysis: a review and recent developments. Philosophical Transactions of the Royal Society A, 374:20150202, 2016. <a href="https://doi.org/10.1098/rsta.2015.0202">doi:10.1098/rsta.2015.0202</a></li>
+      <li><b>X. Zhang, J. Zhao, Y. LeCun.</b> Character-level convolutional networks for text classification. NeurIPS, vol. 28, 2015.</li>
+    </ol>
+  </section>
+
+  </main>
+</div>
+
+<footer class="wrap">
+  STAT 236 course project, Harvard University, Fall 2026. Leo Cheng, Chufei Peng, Krystal Qiu, Jiangqi Wu.
+</footer>
+
+<script>
+(function () {
+  // ===== Results data from the updated notebook run log =====
+  const FULL = 0.9080;
+  const L1  = { 1: 0.6713, 2: 0.7115, 5: 0.7734, 10: 0.8083, 25: 0.8572, 50: 0.8797, 75: 0.8908, 100: 0.8978, 150: 0.9036, 200: 0.9046, 300: 0.9066, 400: 0.9065 };
+  const PCA = { 1: 0.5684, 2: 0.6700, 5: 0.7903, 10: 0.8371, 25: 0.8668, 50: 0.8877, 75: 0.8915, 100: 0.8970, 150: 0.9028, 200: 0.9025, 300: 0.9039, 400: 0.9051 };
+  const RUNS = {
+    1: [0.5668,0.6713,0.5413,0.5659,0.5224,0.5074,0.5103,0.5714,0.5364,0.5290,0.5295,0.5548,0.5132,0.5649,0.5361,0.5466,0.5329,0.5974,0.5562,0.5080],
+    2: [0.5442,0.6189,0.5292,0.5639,0.5259,0.6008,0.6119,0.5343,0.4996,0.6555,0.5767,0.5288,0.5224,0.5317,0.5376,0.5893,0.5895,0.5134,0.5089,0.5393],
+    5: [0.5944,0.6733,0.5651,0.6769,0.6166,0.6773,0.6380,0.5869,0.6239,0.6137,0.6331,0.5580,0.6069,0.5751,0.6452,0.5712,0.6082,0.6353,0.6325,0.6226],
+    10: [0.6958,0.7027,0.7069,0.6739,0.6430,0.7013,0.6324,0.6929,0.6229,0.6910,0.7025,0.6559,0.6751,0.6865,0.7003,0.6643,0.6517,0.7163,0.6701,0.5743],
+    25: [0.7071,0.7905,0.7698,0.7532,0.7462,0.7042,0.7185,0.7537,0.7404,0.7306,0.7534,0.7139,0.7461,0.7695,0.7629,0.7839,0.7276,0.7140,0.7546,0.7132],
+    50: [0.8230,0.8086,0.8209,0.8084,0.7955,0.7997,0.8151,0.7927,0.7776,0.8472,0.8151,0.7957,0.8162,0.8228,0.7842,0.8123,0.7955,0.8127,0.8107,0.8245],
+    75: [0.8525,0.8067,0.8462,0.8364,0.8438,0.8183,0.8220,0.8396,0.8280,0.8378,0.8435,0.8341,0.8162,0.8246,0.8353,0.8540,0.8315,0.8539,0.8376,0.8320],
+    100: [0.8393,0.8455,0.8509,0.8543,0.8615,0.8520,0.8527,0.8516,0.8590,0.8597,0.8572,0.8631,0.8494,0.8537,0.8535,0.8487,0.8585,0.8517,0.8483,0.8630],
+    150: [0.8813,0.8754,0.8807,0.8711,0.8735,0.8610,0.8759,0.8751,0.8615,0.8760,0.8806,0.8764,0.8791,0.8723,0.8818,0.8739,0.8775,0.8732,0.8722,0.8851],
+    200: [0.8851,0.8915,0.8785,0.8766,0.8827,0.8857,0.8902,0.8876,0.8847,0.8844,0.8832,0.8894,0.8875,0.8816,0.8850,0.8930,0.8849,0.8881,0.8862,0.8936],
+    300: [0.8978,0.9002,0.8976,0.8958,0.8960,0.8968,0.8960,0.8963,0.8981,0.9000,0.8980,0.8922,0.8949,0.9000,0.8993,0.8985,0.8965,0.8959,0.8953,0.8957],
+    400: [0.8996,0.9048,0.9007,0.9047,0.9013,0.9017,0.9034,0.9010,0.9030,0.9063,0.9011,0.9014,0.9034,0.9039,0.9017,0.9009,0.8993,0.9017,0.9038,0.9053]
+  };
+  const KS = Object.keys(L1).map(Number).sort((a, b) => a - b);
+  const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+  const sd = a => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1)); };
+  // Accuracy is exact to four decimals on the 10,000-review test set.
+  const RAND = {}; KS.forEach(k => RAND[k] = {
+    mean: mean(RUNS[k]), sd: sd(RUNS[k]),
+    min: Math.min(...RUNS[k]), max: Math.max(...RUNS[k]) });
+  window.__RESULTS = { KS, RAND, L1, PCA, FULL };
+
+  const C = { random: '#2F6FD6', l1: '#D9562B', pca: '#1F9A6D', ink: '#1C2128', ink2: '#4B5563', ink3: '#8A94A3', grid: '#E7E9E4' };
+  const p2 = x => (x * 100).toFixed(2);
+  const pct = x => p2(x) + '%';
+
+  // ===== tables =====
+  const tb = document.querySelector('#tableAcc tbody');
+  KS.forEach(k => {
+    const best = L1[k] >= PCA[k] ? 'l1' : 'pca';
+    tb.insertAdjacentHTML('beforeend', `<tr><td>${k}</td><td>${p2(RAND[k].mean)} ± ${p2(RAND[k].sd)}</td><td class="${best === 'l1' ? 'best' : ''}">${p2(L1[k])}</td><td class="${best === 'pca' ? 'best' : ''}">${p2(PCA[k])}</td></tr>`);
+  });
+  tb.insertAdjacentHTML('beforeend', `<tr><td>Full 768</td><td colspan="3" style="text-align:center">${p2(FULL)}</td></tr>`);
+  const tr = document.querySelector('#tableRange tbody');
+  KS.forEach(k => tr.insertAdjacentHTML('beforeend', `<tr><td>${k}</td><td>${p2(RAND[k].min)}</td><td>${p2(RAND[k].max)}</td><td>${p2(RAND[k].max - RAND[k].min)} pts</td></tr>`));
+
+  // ===== chart helpers =====
+  const NS = 'http://www.w3.org/2000/svg';
+  function mk(svg) { return (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; }; }
+  function marker(el, shape, x, y, color) {
+    if (shape === 'square') return el('rect', { x: x - 4.5, y: y - 4.5, width: 9, height: 9, fill: color, stroke: '#fff', 'stroke-width': 2 });
+    if (shape === 'triangle') return el('polygon', { points: `${x},${y - 6} ${x + 5.5},${y + 4} ${x - 5.5},${y + 4}`, fill: color, stroke: '#fff', 'stroke-width': 2 });
+    return el('circle', { cx: x, cy: y, r: 5, fill: color, stroke: '#fff', 'stroke-width': 2 });
+  }
+  function row(color, label, value) { return `<div><i style="--c:${color}">${label}</i><span>${value}</span></div>`; }
+
+  function makeChart(svg, cfg) {
+    const tip = svg.parentElement.querySelector('.tip');
+    let G = null;
+    function draw() {
+      const W = Math.max(300, Math.round(svg.parentElement.clientWidth));
+      const small = W < 560;
+      const H = cfg.height(small);
+      const m = { t: 30, r: small ? 58 : 76, b: 50, l: small ? 46 : 58 };
+      const pw = W - m.l - m.r, ph = H - m.t - m.b;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svg.innerHTML = '';
+      const el = mk(svg);
+      const fs = small ? 12 : 13;
+      const xOf = cfg.xOf(m.l, pw);
+      const yOf = cfg.yOf(m.t, ph);
+      cfg.yTicks.forEach(v => {
+        el('line', { x1: m.l, x2: W - m.r, y1: yOf(v), y2: yOf(v), stroke: C.grid, 'stroke-width': 1 });
+        el('text', { x: m.l - 8, y: yOf(v) + 4, 'text-anchor': 'end', 'font-size': fs, fill: C.ink3 }).textContent = cfg.yFmt(v);
+      });
+      const labelKs = small ? [1, 5, 25, 100, 400] : (cfg.logLabels ? [1, 2, 5, 10, 25, 50, 100, 200, 400] : KS);
+      KS.filter(k => labelKs.includes(k)).forEach(k => el('text', { x: xOf(k), y: H - 24, 'text-anchor': 'middle', 'font-size': fs, fill: C.ink3 }).textContent = k);
+      el('text', { x: m.l + pw / 2, y: H - 4, 'text-anchor': 'middle', 'font-size': fs, fill: C.ink2 }).textContent = cfg.xLabel;
+      if (cfg.yTitle) el('text', { x: m.l - 8, y: 14, 'font-size': fs, fill: C.ink2 }).textContent = cfg.yTitle;
+      cfg.render(el, { W, H, m, pw, ph, xOf, yOf, fs, small });
+      const cross = el('line', { x1: 0, x2: 0, y1: m.t, y2: H - m.b, stroke: C.ink, 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0 });
+      G = { W, m, xOf, cross };
+    }
+    function nearest(px) { let best = KS[0], d = Infinity; KS.forEach(k => { const dd = Math.abs(G.xOf(k) - px); if (dd < d) { d = dd; best = k; } }); return best; }
+    function show(evt) {
+      const rect = svg.getBoundingClientRect();
+      const px = (evt.clientX - rect.left) / rect.width * G.W;
+      if (px < G.m.l - 24 || px > G.W - G.m.r + 24) return hide();
+      const k = nearest(px);
+      G.cross.setAttribute('x1', G.xOf(k)); G.cross.setAttribute('x2', G.xOf(k)); G.cross.setAttribute('opacity', 1);
+      tip.innerHTML = `<b>k = ${k}</b>` + cfg.tip(k);
+      tip.style.display = 'block';
+      const left = G.xOf(k) / G.W * rect.width;
+      let x = left + (left > rect.width * 0.55 ? -tip.offsetWidth - 14 : 14);
+      x = Math.max(0, Math.min(rect.width - tip.offsetWidth, x));
+      tip.style.left = x + 'px';
+      tip.style.top = Math.max(0, Math.min(rect.height - tip.offsetHeight, evt.clientY - rect.top - 20)) + 'px';
+    }
+    function hide() { if (G) G.cross.setAttribute('opacity', 0); tip.style.display = 'none'; }
+    svg.addEventListener('mousemove', show);
+    svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('touchstart', e => show(e.touches[0]), { passive: true });
+    svg.addEventListener('touchmove', e => show(e.touches[0]), { passive: true });
+    draw();
+    let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { hide(); draw(); }, 120); });
+  }
+  const logX = (l, pw) => k => l + (Math.log(k) - Math.log(KS[0])) / (Math.log(KS[KS.length - 1]) - Math.log(KS[0])) * pw;
+  function endLabels(el, xOf, items, fs) {
+    const lab = items.map(o => ({ t: o.t, y: o.y + 4 })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < lab.length; i++) if (lab[i].y - lab[i - 1].y < 16) lab[i].y = lab[i - 1].y + 16;
+    lab.forEach(o => el('text', { x: xOf(KS[KS.length - 1]) + 10, y: o.y, 'font-size': fs, fill: C.ink2 }).textContent = o.t);
+  }
+
+  // ===== Figure 5: loss vs full (log y) =====
+  const LOSS = { l1: k => (FULL - L1[k]) * 100, pca: k => (FULL - PCA[k]) * 100, random: k => (FULL - RAND[k].mean) * 100 };
+  const lo = 0.05, hi = 50;
+  makeChart(document.getElementById('chartLoss'), {
+    height: s => s ? 320 : 360,
+    xOf: logX,
+    logLabels: true,
+    yOf: (t, ph) => v => t + (Math.log(hi) - Math.log(v)) / (Math.log(hi) - Math.log(lo)) * ph,
+    yTicks: [0.1, 0.3, 1, 3, 10, 30, 50],
+    yFmt: v => String(v),
+    yTitle: 'points below full 768',
+    xLabel: 'dimensions kept, k (log scale)',
+    render(el, g) {
+      const { xOf, yOf, fs } = g;
+      [['random', 'circle'], ['l1', 'square'], ['pca', 'triangle']].forEach(([key, shape]) => {
+        el('polyline', { points: KS.map(k => `${xOf(k)},${yOf(LOSS[key](k))}`).join(' '), fill: 'none', stroke: C[key], 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
+        KS.forEach(k => marker(el, shape, xOf(k), yOf(LOSS[key](k)), C[key]));
+      });
+      const kl = KS[KS.length - 1];
+      endLabels(el, xOf, [{ t: 'Random', y: yOf(LOSS.random(kl)) }, { t: 'PCA', y: yOf(LOSS.pca(kl)) }, { t: 'L1', y: yOf(LOSS.l1(kl)) }], fs);
+    },
+    tip: k => row(C.l1, 'L1-selected', LOSS.l1(k).toFixed(2) + ' pts') + row(C.pca, 'PCA', LOSS.pca(k).toFixed(2) + ' pts') + row(C.random, 'Random mean', LOSS.random(k).toFixed(2) + ' pts')
+  });
+
+  // ===== Figure 6: every random draw =====
+  makeChart(document.getElementById('chartRuns'), {
+    height: s => s ? 360 : 420,
+    xOf: (l, pw) => k => l + (KS.indexOf(k) + 0.5) / KS.length * pw,
+    yOf: (t, ph) => v => t + (0.92 - v) / (0.92 - 0.48) * ph,
+    yTicks: [0.50, 0.60, 0.70, 0.80, 0.90],
+    yFmt: v => (v * 100).toFixed(0) + '%',
+    xLabel: 'dimensions kept, k',
+    render(el, g) {
+      const { xOf, yOf, W, m, pw, fs, small } = g;
+      el('line', { x1: m.l, x2: W - m.r, y1: yOf(FULL), y2: yOf(FULL), stroke: C.ink, 'stroke-width': 2, 'stroke-dasharray': '6 5' });
+      el('text', { x: m.l + 6, y: yOf(FULL) - 8, 'font-size': fs, fill: C.ink, 'font-weight': 600 }).textContent = 'Full 768 dimensions: 90.80%';
+      const colW = pw / KS.length;
+      const spread = Math.min(colW * 0.3, 34);
+      KS.forEach(k => {
+        const x0 = xOf(k);
+        const sorted = RUNS[k].map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+        sorted.forEach((o, j) => {
+          const jit = ((j % 5) - 2) / 2 * spread * 0.5 - spread * 0.35;
+          el('circle', { cx: x0 + jit, cy: yOf(o.v), r: small ? 3.5 : 4.5, fill: C.random, 'fill-opacity': 0.6, stroke: '#fff', 'stroke-width': 1.2 });
+        });
+        el('line', { x1: x0 - spread * 0.9, x2: x0 + spread * 0.25, y1: yOf(RAND[k].mean), y2: yOf(RAND[k].mean), stroke: C.ink, 'stroke-width': 2.5, 'stroke-linecap': 'round' });
+        marker(el, 'square', x0 + spread * 0.62, yOf(L1[k]), C.l1);
+        marker(el, 'triangle', x0 + spread * 1.12, yOf(PCA[k]), C.pca);
+      });
+    },
+    tip: k => row(C.random, 'Best draw', pct(RAND[k].max)) + row(C.ink, 'Mean ± sd', `${pct(RAND[k].mean)} ± ${p2(RAND[k].sd)}`) + row(C.random, 'Worst draw', pct(RAND[k].min)) + row(C.l1, 'L1-selected', pct(L1[k])) + row(C.pca, 'PCA', pct(PCA[k]))
+  });
+
+  // ===== contents rail highlight =====
+  const links = Array.from(document.querySelectorAll('.toc a'));
+  const secs = links.map(a => document.querySelector(a.getAttribute('href')));
+  function onScroll() {
+    let cur = 0;
+    secs.forEach((s, i) => { if (s.getBoundingClientRect().top < window.innerHeight * 0.35) cur = i; });
+    links.forEach((a, i) => a.classList.toggle('on', i === cur));
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
+
+
+</body></html>
