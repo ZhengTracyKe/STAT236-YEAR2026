@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore the twelve STAT 236 final projects from Fall 2026 at Harvard University. Open each group's interactive project website.">
+  <title>STAT 236 | Course Projects · Fall 2026</title>
+  <style>
+    :root { color-scheme: light; --blue: #425fa0; --ink: #26313b; --muted: #5f6b77; --line: #dce3e8; --paper: #fff; --bg: #c7dce5; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.65 Georgia, "Times New Roman", serif; }
+    a { color: var(--blue); text-underline-offset: 4px; }
+    a:hover { color: #233d73; }
+    a:focus-visible { outline: 3px solid var(--blue); outline-offset: 5px; border-radius: 1px; }
+    .skip { position: absolute; top: -100px; left: 20px; z-index: 2; padding: 8px 14px; background: white; }
+    .skip:focus { top: 12px; }
+    .shell { max-width: 1100px; margin: 0 auto; }
+    .site-header { background: white; border-top: 5px solid #576bb1; box-shadow: 0 3px 10px #203a4b12; padding: 30px 42px 0; }
+    .masthead { display: flex; justify-content: space-between; gap: 20px; align-items: baseline; }
+    .brand { margin: 0; font-size: 34px; line-height: 1.2; font-weight: bold; letter-spacing: -.8px; }
+    .brand a { color: #18212b; text-decoration: none; }
+    .semester { margin: 0; color: var(--muted); font: 12px/1.5 Arial, sans-serif; letter-spacing: 1.7px; text-transform: uppercase; }
+    .subtitle { margin: 7px 0 24px; color: var(--muted); font-size: 16px; }
+    nav { display: flex; gap: 28px; flex-wrap: wrap; border-top: 1px solid var(--line); }
+    nav a { padding: 14px 0 11px; font: bold 11px/1.5 Arial, sans-serif; letter-spacing: 1.2px; text-decoration: none; color: #303942; border-bottom: 3px solid transparent; }
+    nav a[aria-current] { color: var(--blue); border-color: #576bb1; }
+    nav a:hover { border-color: #9cafd3; }
+    main { margin-top: 28px; padding: 42px; background: var(--paper); display: grid; grid-template-columns: minmax(0,1fr) 205px; gap: 48px; }
+    .eyebrow { margin: 0 0 9px; color: var(--blue); font: bold 11px/1.5 Arial, sans-serif; letter-spacing: 1.8px; text-transform: uppercase; }
+    h1 { font-size: clamp(30px,4vw,40px); line-height: 1.18; margin: 0 0 18px; letter-spacing: -.9px; font-weight: normal; }
+    .intro { margin: 0; color: #53616c; max-width: 620px; font-size: 17px; }
+    .section-head { margin: 32px 0 0; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 10px; }
+    h2 { margin: 0; font-size: 21px; line-height: 1.3; }
+    .count { font: 11px/1.5 Arial, sans-serif; color: var(--muted); letter-spacing: .6px; white-space: nowrap; }
+    .projects { list-style: none; padding: 0; margin: 0; }
+    .project { display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 15px; padding: 20px 0 22px; border-bottom: 1px solid var(--line); }
+    .number { color: #8291a0; font: 12px/1.5 Arial, sans-serif; padding-top: 2px; }
+    .group { margin: 0 0 5px; color: var(--muted); font: 11px/1.5 Arial, sans-serif; letter-spacing: .65px; text-transform: uppercase; }
+    h3 { margin: 0; font-size: 19px; line-height: 1.4; font-weight: normal; }
+    h3 a { text-decoration: none; }
+    h3 a:hover { text-decoration: underline; }
+    .arrow { font: 16px/1 Arial, sans-serif; white-space: nowrap; }
+    aside { border-left: 1px solid var(--line); padding-left: 25px; align-self: start; }
+    .course-mark { font: 12px/1.4 Arial, sans-serif; letter-spacing: 2px; color: var(--blue); margin: 0 0 7px; }
+    .course-year { font-size: 47px; line-height: 1.15; color: #2c3e53; margin: 0 0 21px; }
+    aside h2 { font: bold 11px/1.5 Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px; margin: 25px 0 9px; }
+    aside p { font-size: 14px; line-height: 1.65; margin: 0 0 12px; color: var(--muted); }
+    aside a { font-size: 14px; }
+    .aside-links { list-style: none; margin: 0; padding: 0; }
+    .aside-links li { margin: 0 0 8px; }
+    .note { margin: 25px 0 0; padding: 15px 0 0; color: var(--muted); font-size: 13px; }
+    footer { padding: 22px 4px 35px; display: flex; justify-content: space-between; gap: 16px; color: #415667; font: 11px/1.6 Arial, sans-serif; }
+    footer a { color: #334f7a; }
+    @media (max-width: 760px) {
+      .shell { margin: 0 16px; }
+      .site-header { padding: 24px 24px 0; }
+      .masthead { align-items: start; flex-direction: column; gap: 8px; }
+      .brand { font-size: 29px; }
+      .subtitle { font-size: 14px; margin-bottom: 20px; }
+      nav { gap: 22px; }
+      main { padding: 28px 24px; margin-top: 18px; grid-template-columns: minmax(0,1fr); gap: 32px; }
+      aside { border-left: 0; border-top: 1px solid var(--line); padding: 25px 0 0; }
+      .course-year { font-size: 32px; margin-bottom: 12px; }
+      aside h2 { margin-top: 20px; }
+      .project { grid-template-columns: 24px minmax(0,1fr); gap: 10px; }
+      h3 { font-size: 18px; }
+      footer { flex-direction: column; gap: 5px; padding-left: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    @media print { body { background: white; } .shell { max-width: none; } .site-header, main { box-shadow: none; } nav, aside, footer { display: none; } main { display: block; margin-top: 0; } .project { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to projects</a>
+  <div class="shell">
+    <header class="site-header" id="top">
+      <div class="masthead"><p class="brand"><a href="./course-link.html">STAT 236</a></p><p class="semester">Fall 2026 · Harvard University</p></div>
+      <p class="subtitle">Department of Statistics · Course Project Collection</p>
+      <nav aria-label="Main navigation">
+        <a href="#projects" aria-current="page">Course projects</a>
+        <a href="https://www.tracyke.net/index.html">Tracy Ke’s website ↗</a>
+        <a href="https://github.com/ZhengTracyKe/STAT236-YEAR2026">GitHub ↗</a>
+      </nav>
+    </header>
+    <main id="main">
+      <section aria-labelledby="page-title">
+        <p class="eyebrow">Student research · 2026</p>
+        <h1 id="page-title">Final projects</h1>
+        <p class="intro">Twelve explorations of networks, text, and statistical learning. Browse the class’s final projects below; each title opens the group’s interactive project website.</p>
+        <div class="section-head" id="projects"><h2>Project directory</h2><span class="count">12 GROUP PROJECTS</span></div>
+        <ol class="projects" aria-label="Final projects">
+        <li class="project">
+          <span class="number" aria-hidden="true">01</span>
+          <div><p class="group">Annie · Group project</p>
+            <h3><a href="./ANNIE/Annie_Zidan_Yinpeng_Aniket_Who%20Should%20We%20Test_%20%E2%80%94%20STAT%20236%20Research%20Project.html">Who Should We Test?<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">02</span>
+          <div><p class="group">Bruce Tang · Group project</p>
+            <h3><a href="./BRUCE_TANG/ownership_communities.html">Ownership Communities<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">03</span>
+          <div><p class="group">Chenxi Ge · Group project</p>
+            <h3><a href="./CHENXI_GE/STAT236_Final_Project.html">How Certain Is the Chatbot Arena Leaderboard?<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">04</span>
+          <div><p class="group">Cindy Sun · Group project</p>
+            <h3><a href="./CINDY_SUN/index.html">Market Regime Clustering<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">05</span>
+          <div><p class="group">Elvin Lo · Group project</p>
+            <h3><a href="./ELVIN_LO/When%20Does%20Contiguity%20Help%20Watermark%20Detection_.html">When Does Contiguity Help Watermark Detection?<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">06</span>
+          <div><p class="group">Eric Tong · Group project</p>
+            <h3><a href="./ERIC_TONG/Eric_Tong.html">Compression and the v4 Dip<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">07</span>
+          <div><p class="group">Faye Fang · Group project</p>
+            <h3><a href="./FAYE_FANG/html/index.html">Do Social Circles Share Music Taste?<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">08</span>
+          <div><p class="group">Himal · Group project</p>
+            <h3><a href="./HIMAL/Text%20Analysis%20of%20Local%20School%20Board%20Meetings.html">Text Analysis of Local School Board Meetings<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">09</span>
+          <div><p class="group">Irene Tan · Group project</p>
+            <h3><a href="./IRENE_TAN/STAT%20236%20Course%20Project_Timeline%201_Group%203_Irene%20Tan%2C%20Liangzong%20Ma%2C%20Tianruo%20Zhang/Webpage.html">Fragmenting Capital<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">10</span>
+          <div><p class="group">Krystal Qiu · Group project</p>
+            <h3><a href="./KRYSTAL_QIU/How%20Sparse%20Are%20Useful%20Transformer%20Representations_%20%28STAT%20236%20project%29.html">How Sparse Are Useful Transformer Representations?<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">11</span>
+          <div><p class="group">Margaret Lee · Group project</p>
+            <h3><a href="./MARGARET_LEE/congress_is_non-binary.html">Congress Is Non-binary<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        <li class="project">
+          <span class="number" aria-hidden="true">12</span>
+          <div><p class="group">Tong Zhou · Group project</p>
+            <h3><a href="./TONG_ZHOU/Tong%20Zhou_Sia%20Xie_Yilin%20Jiang_Mingjiao%20Diao_From%20Purchases%20to%20Communities%20_%20STAT%20236.html">From Purchases to Communities<span class="arrow" aria-hidden="true"> ↗</span></a></h3>
+          </div>
+        </li>
+        </ol>
+        <p class="note">Project pages are presented as submitted by each group. Some interactive figures and external resources require an internet connection.</p>
+      </section>
+      <aside aria-label="About this collection">
+        <p class="course-mark">STAT 236</p><p class="course-year">Fall 2026</p>
+        <p>A collection of final projects from Harvard University’s Department of Statistics.</p>
+        <h2>Explore the collection</h2>
+        <p>Select any project title to read the group’s research and explore its results.</p>
+        <h2>Course links</h2>
+        <ul class="aside-links">
+          <li><a href="#projects">All 12 projects</a></li>
+          <li><a href="https://www.tracyke.net/index.html">Zheng (Tracy) Ke</a></li>
+          <li><a href="https://github.com/ZhengTracyKe/STAT236-YEAR2026">Project repository</a></li>
+        </ul>
+      </aside>
+    </main>
+    <footer><span>STAT 236 · Harvard University · Fall 2026</span><a href="#top">Back to top ↑</a></footer>
+  </div>
+</body>
+</html>

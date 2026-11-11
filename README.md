@@ -2,6 +2,8 @@
 
 Explore the final projects from all 12 groups. Each top-level group folder contains its project page and any supporting files.
 
+[Open the course homepage](./course-link.html) · [Published website](https://zhengtracyke.github.io/STAT236-YEAR2026/)
+
 ## Project directory
 
 Click a project title to open its main HTML file. On the published GitHub Pages site, these links open the rendered, interactive projects. In GitHub's repository view, they open the HTML source.
@@ -31,7 +33,7 @@ From this folder, start a local web server:
 python3 -m http.server 8000
 ```
 
-Open <http://localhost:8000/>, then navigate to a group folder and its HTML file. Press **Ctrl+C** in Terminal to stop the server. You can also open the HTML files directly in a browser, although some browser features work better through a local server.
+Open <http://localhost:8000/> to view the course homepage and follow its project links. Press **Ctrl+C** in Terminal to stop the server. You can also open the HTML files directly in a browser, although some browser features work better through a local server.
 
 Keep each HTML file together with its supporting folders. Some projects also use external libraries, fonts, reports, or links to the group's original website and need an internet connection.
 
@@ -70,7 +72,7 @@ Keep each HTML file together with its supporting folders. Some projects also use
 3. Select **main** and **/ (root)**, then click **Save**.
 4. Once deployment finishes, use **Visit site** on the Pages settings screen. For a repository named `STAT236-YEAR2026`, the address is normally `https://ZhengTracyKe.github.io/STAT236-YEAR2026/`.
 
-GitHub Pages supports this root `README.md` as the site's entry page. Its relative project links will point to the HTML files on the same site. Allow up to 10 minutes for publication.
+The root `index.html` opens `course-link.html`, the course homepage containing all 12 project links. The `.nojekyll` file lets GitHub Pages serve the HTML and supporting files directly. Allow up to 10 minutes for publication.
 
 ## Update the collection
 
@@ -82,6 +84,6 @@ git commit -m "Update final projects"
 git push
 ```
 
-When adding a new group or renaming its main HTML file, update the project directory above. Links are relative to this folder, so they do not require a GitHub username or repository name.
+When adding a new group or renaming its main HTML file, update the project directory above and the project list in `course-link.html`. Links are relative to this folder, so they do not require a GitHub username or repository name.
 
 Setup references: [Add local files to GitHub](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github), [Create a GitHub Pages site](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site), and [Configure its publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
