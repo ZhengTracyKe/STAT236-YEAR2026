@@ -2,7 +2,7 @@
 
 **Fall 2026 · Harvard University · Department of Statistics**
 
-Twelve explorations of networks, text, and statistical learning. Browse the class’s final projects below. Each project title opens the group’s interactive project website.
+Thirteen explorations of networks, text, and statistical learning. Browse the class’s final projects below. Each project title opens the group’s interactive project website.
 
 [Course homepage](https://zhengtracyke.github.io/STAT236-YEAR2026/course-link.html) · [Zheng (Tracy) Ke](https://www.tracyke.net/index.html)
 
@@ -14,6 +14,7 @@ Twelve explorations of networks, text, and statistical learning. Browse the clas
 | Bruce Tang | [Ownership Communities](https://zhengtracyke.github.io/STAT236-YEAR2026/BRUCE_TANG/ownership_communities.html) | [Files](./BRUCE_TANG/) |
 | Chenxi Ge | [How Certain Is the Chatbot Arena Leaderboard?](https://zhengtracyke.github.io/STAT236-YEAR2026/CHENXI_GE/STAT236_Final_Project.html) | [Files](./CHENXI_GE/) |
 | Cindy Sun | [Market Regime Clustering](https://zhengtracyke.github.io/STAT236-YEAR2026/CINDY_SUN/index.html) | [Files](./CINDY_SUN/) |
+| Ege Cakar | [Who Touched My Sentence?](https://zhengtracyke.github.io/STAT236-YEAR2026/EGE_CAKAR/index%20%281%29.html) | [Files](./EGE_CAKAR/) |
 | Elvin Lo | [When Does Contiguity Help Watermark Detection?](https://zhengtracyke.github.io/STAT236-YEAR2026/ELVIN_LO/When%20Does%20Contiguity%20Help%20Watermark%20Detection_.html) | [Files](./ELVIN_LO/) |
 | Eric Tong | [Compression and the v4 Dip](https://zhengtracyke.github.io/STAT236-YEAR2026/ERIC_TONG/Eric_Tong.html) | [Files](./ERIC_TONG/) |
 | Faye Fang | [Do Social Circles Share Music Taste?](https://zhengtracyke.github.io/STAT236-YEAR2026/FAYE_FANG/html/index.html) | [Files](./FAYE_FANG/) |
